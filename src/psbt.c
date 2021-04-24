@@ -1352,7 +1352,7 @@ int wally_psbt_from_bytes(const unsigned char *bytes, size_t len,
             pull_subfield_start(&bytes, &len,
                                 pull_varint(&bytes, &len),
                                 &val, &val_max);
-            ret = wally_tx_from_bytes(val, val_max, flags, &tx);
+            ret = wally_tx_from_bytes(val, val_max, flags | WALLY_TX_FLAG_PRE_BIP144, &tx);
             if (ret == WALLY_OK) {
                 ret = psbt_set_global_tx(result, tx, false);
                 if (ret != WALLY_OK)
@@ -1722,7 +1722,10 @@ int wally_psbt_to_bytes(const struct wally_psbt *psbt, uint32_t flags,
 
     /* Global tx */
     push_psbt_key(&cursor, &max, PSBT_GLOBAL_UNSIGNED_TX, NULL, 0);
-    push_length_and_tx(&cursor, &max, psbt->tx, WALLY_TX_FLAG_ALLOW_PARTIAL);
+    ret = push_length_and_tx(&cursor, &max, psbt->tx,
+                             WALLY_TX_FLAG_ALLOW_PARTIAL | WALLY_TX_FLAG_PRE_BIP144);
+    if (ret != WALLY_OK)
+        return ret;
 
     /* version */
     if (psbt->version > 0) {

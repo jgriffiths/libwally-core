@@ -24,6 +24,7 @@ extern "C" {
 #define WALLY_TX_FLAG_USE_WITNESS   0x1 /* Encode witness data if present */
 #define WALLY_TX_FLAG_USE_ELEMENTS  0x2 /* Encode/Decode as an elements transaction */
 #define WALLY_TX_FLAG_ALLOW_PARTIAL 0x4 /* Allow partially complete transactions */
+#define WALLY_TX_FLAG_PRE_BIP144    0x8 /* Encode/Decode using pre-BIP 144 serialisation  */
 
 #define WALLY_TX_FLAG_BLINDED_INITIAL_ISSUANCE 0x1
 

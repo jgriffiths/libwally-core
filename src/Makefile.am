@@ -164,6 +164,7 @@ libwallycore_la_SOURCES = \
     psbt.c \
     pullpush.c \
     script.c \
+    script_iter.c \
     scrypt.c \
     sign.c \
     symmetric.c \

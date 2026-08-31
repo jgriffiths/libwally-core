@@ -269,6 +269,14 @@ test_coinselection_LDADD = $(lib_LTLIBRARIES) @CTEST_EXTRA_STATIC@
 if PYTHON_MANYLINUX
 test_coinselection_LDADD += $(PYTHON_LIBS)
 endif
+TESTS += test_script
+noinst_PROGRAMS += test_script
+test_script_SOURCES = ctest/test_script.c
+test_script_CFLAGS = -I$(top_srcdir)/include $(AM_CFLAGS)
+test_script_LDADD = $(lib_LTLIBRARIES) @CTEST_EXTRA_STATIC@
+if PYTHON_MANYLINUX
+test_script_LDADD += $(PYTHON_LIBS)
+endif
 TESTS += test_tx
 noinst_PROGRAMS += test_tx
 test_tx_SOURCES = ctest/test_tx.c

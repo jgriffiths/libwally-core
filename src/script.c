@@ -9,6 +9,7 @@
 
 #include <limits.h>
 #include "script_int.h"
+#include "script_iter.h"
 
 /* varint tags and limits */
 #define VI_TAG_16 253
@@ -406,8 +407,8 @@ static bool scriptpubkey_is_multisig(const unsigned char *bytes, size_t bytes_le
     return bytes_len == 2;
 }
 
-static bool scriptpubkey_is_csv_2of2_then_1(const unsigned char *bytes, size_t bytes_len,
-                                            uint32_t* csv_blocks)
+static bool scriptpubkey_is_csv_2of2_then_1_foo(const unsigned char *bytes, size_t bytes_len,
+                                                 uint32_t* csv_blocks)
 {
     const size_t min_len = 9 + 2 * (EC_PUBLIC_KEY_LEN + 1) + 2;
     int64_t blocks;
@@ -436,6 +437,20 @@ static bool scriptpubkey_is_csv_2of2_then_1(const unsigned char *bytes, size_t b
         return false;
     *csv_blocks = (uint32_t)blocks;
     return true;
+}
+
+static bool scriptpubkey_is_csv_2of2_then_1(const unsigned char *bytes, size_t bytes_len,
+                                            uint32_t* csv_blocks)
+{
+    static const uint32_t opcodes[] = {
+        OP_DEPTH, OP_1SUB, OP_IF,
+        SI_PUSH | SI_EQUAL, EC_PUBLIC_KEY_LEN,
+        OP_CHECKSIGVERIFY, OP_ELSE,
+        SI_NUMBER | SI_GTE | SI_LTE, 0x11, 0xfffe,
+        OP_CHECKSEQUENCEVERIFY, OP_DROP, OP_ENDIF,
+        SI_PUSH | SI_EQUAL, EC_PUBLIC_KEY_LEN, OP_CHECKSIGVERIFY };
+    script_iter s;
+    return si_init(&s, bytes, bytes_len) && si_match(&s, opcodes, NUM_ELEMS(opcodes));
 }
 
 static bool scriptpubkey_is_csv_2of2_then_1_opt(const unsigned char *bytes, size_t bytes_len,

@@ -1,6 +1,5 @@
 import json
 import unittest
-import util
 from util import *
 
 FLAG_GRIND_R = 0x4
@@ -486,21 +485,9 @@ class PSBTTests(unittest.TestCase):
         for case in JSON['valid']:
             if case.get('is_pset', False) and not is_elements_build:
                 continue # No Elements support, skip this test case
-            fail_at = 0
-            while True:
-                # Fail each allocation made while parsing in turn
-                fail_at += 1
-                util._fail_malloc_at, util._fail_malloc_counter = fail_at, 0
-                try:
-                    ret = wally_psbt_from_base64(case['psbt'], 0, psbt)
-                    did_fail = util._fail_malloc_counter >= fail_at
-                finally:
-                    util._fail_malloc_at, util._fail_malloc_counter = 0, 0
-                if not did_fail:
-                    self.assertEqual(ret, WALLY_OK) # Parsed without failing
-                    wally_psbt_free(psbt)
-                    break
-                self.assertEqual(ret, WALLY_ENOMEM)
+            ret = malloc_fail_loop(lambda: wally_psbt_from_base64(case['psbt'], 0, psbt))
+            self.assertEqual(ret, WALLY_OK) # Parsed without failing
+            wally_psbt_free(psbt)
 
 if __name__ == '__main__':
     unittest.main()

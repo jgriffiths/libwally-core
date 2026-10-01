@@ -48,12 +48,10 @@
 #define TXIO_SHA_OUTPUT_WITNESSES_D   (TXIO_SHA_OUTPUTS | TXIO_SHA256_D)
 /* ... end of segwit cached data */
 
-/* Data cached by its binary value stores its type and leaf version ahead
- * of its hash, so that e.g. an annex and a tapleaf script with the same
- * bytes cannot be mistaken for each other.
- */
+/* Data cached by binary value */
 #define TXIO_CACHED_ANNEX             1
 #define TXIO_CACHED_TAPLEAF           2
+/* Type byte + version byte + hash */
 #define TXIO_CACHED_BYTES_LEN         (2 + SHA256_LEN)
 
 static const unsigned char zero_hash[SHA256_LEN];
@@ -228,8 +226,8 @@ static void txio_hash_sha256_ctx(cursor_io *io, struct sha256_ctx *ctx, int key)
 }
 
 static bool txio_hash_cached_bytes(cursor_io *io,
-                                   const unsigned char *key, size_t key_len,
-                                   unsigned char type, unsigned char leaf_version)
+                                   unsigned char type, unsigned char leaf_version,
+                                   const unsigned char *key, size_t key_len)
 {
     const struct wally_map_item *item;
     item = io->cache ? wally_map_get(io->cache, key, key_len) : NULL;
@@ -240,10 +238,10 @@ static bool txio_hash_cached_bytes(cursor_io *io,
     return true;
 }
 
-static void txio_hash_cache_bytes(cursor_io *io,
-                                  const unsigned char *key, size_t key_len,
-                                  unsigned char type, unsigned char leaf_version,
-                                  const unsigned char *hash)
+static void txio_hash_and_cache_bytes(cursor_io *io,
+                                      unsigned char type, unsigned char leaf_version,
+                                      const unsigned char *key, size_t key_len,
+                                      const unsigned char *hash)
 {
     hash_bytes(&io->ctx, hash, SHA256_LEN);
     if (io->cache) {
@@ -251,7 +249,10 @@ static void txio_hash_cache_bytes(cursor_io *io,
         value[0] = type;
         value[1] = leaf_version;
         memcpy(value + 2, hash, SHA256_LEN);
-        /* Does nothing if the key is already cached as a different type */
+        /* If the key is already cached as a different type, this leaves
+         * the original cached value in place; caching will be slightly
+         * less efficient, but this isn't expected to happen in practice.
+         */
         wally_map_add(io->cache, key, key_len, value, sizeof(value));
     }
 }
@@ -593,13 +594,14 @@ static void txio_hash_sha_single_output(cursor_io *io,
 static void txio_hash_annex(cursor_io *io,
                             const unsigned char *annex, size_t annex_len)
 {
-    if (!txio_hash_cached_bytes(io, annex, annex_len, TXIO_CACHED_ANNEX, 0)) {
+    if (!txio_hash_cached_bytes(io, TXIO_CACHED_ANNEX, 0, annex, annex_len)) {
         struct sha256_ctx ctx;
         sha256_init(&ctx);
         hash_varbuff(&ctx, annex, annex_len);
         struct sha256 hash;
         sha256_done(&ctx, &hash);
-        txio_hash_cache_bytes(io, annex, annex_len, TXIO_CACHED_ANNEX, 0, hash.u.u8);
+        txio_hash_and_cache_bytes(io, TXIO_CACHED_ANNEX, 0,
+                                  annex, annex_len, hash.u.u8);
     }
 }
 
@@ -663,16 +665,13 @@ static void txio_hash_tapleaf_hash(cursor_io *io, unsigned char leaf_version,
                                    const unsigned char *tapleaf_script, size_t tapleaf_script_len,
                                    bool is_elements)
 {
-#ifndef BUILD_ELEMENTS
-    (void)is_elements;
-#endif
-    if (!txio_hash_cached_bytes(io, tapleaf_script, tapleaf_script_len,
-                                TXIO_CACHED_TAPLEAF, leaf_version)) {
+    if (!txio_hash_cached_bytes(io, TXIO_CACHED_TAPLEAF, leaf_version,
+                                tapleaf_script, tapleaf_script_len)) {
         unsigned char hash[SHA256_LEN];
         bip341_tapleaf_hash(leaf_version, tapleaf_script, tapleaf_script_len,
                             is_elements, hash, sizeof(hash));
-        txio_hash_cache_bytes(io, tapleaf_script, tapleaf_script_len,
-                              TXIO_CACHED_TAPLEAF, leaf_version, hash);
+        txio_hash_and_cache_bytes(io, TXIO_CACHED_TAPLEAF, leaf_version,
+                                  tapleaf_script, tapleaf_script_len, hash);
     }
 }
 

@@ -415,6 +415,9 @@ int wally_asset_unblind_with_nonce(const unsigned char *nonce_hash, size_t nonce
     if (!ctx)
         return WALLY_ENOMEM;
 
+    if (value_out)
+        *value_out = 0;
+
     if (!nonce_hash || nonce_hash_len != SHA256_LEN ||
         !proof || !proof_len ||
         parse_commitment(ctx, commitment, commitment_len, &commit) != WALLY_OK ||
@@ -466,8 +469,9 @@ mismatch:
 cleanup:
     if (ret == WALLY_ERROR) {
         /* The proof rewound but didn't unblind: wipe any recovered data */
-        wally_clear_4(asset_out, asset_out_len, abf_out, abf_out_len,
-                      vbf_out, vbf_out_len, value_out, sizeof(*value_out));
+        wally_clear_3(asset_out, asset_out_len, abf_out, abf_out_len,
+                      vbf_out, vbf_out_len);
+        *value_out = 0;
     }
     wally_clear_3(&gen, sizeof(gen), &commit, sizeof(commit),
                   message, sizeof(message));

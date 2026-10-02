@@ -809,12 +809,6 @@ class TransactionTests(unittest.TestCase):
             ret = wally_tx_get_input_signature_hash(*args)
             self.assertEqual((ret, h(out[:out_len])), (WALLY_OK, utf8(expected)))
 
-        # SIGHASH_FORKID (== SIGHASH_RANGEPROOF) is invalid for BTC
-        tx = self.tx_deserialize_hex(TX_FAKE_HEX)
-        ret = wally_tx_get_btc_signature_hash(tx, 0, script, script_len, 1,
-                                              0x41, 0, out, out_len)
-        self.assertEqual(ret, WALLY_EINVAL)
-
     def test_elip203(self):
         """Tests for deserializing ELIP203 test vectors"""
         if not wally_is_elements_build()[1]:

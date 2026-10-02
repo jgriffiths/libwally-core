@@ -1,6 +1,5 @@
 import json
 import unittest
-import util
 from util import *
 
 MAX_SATOSHI = 21000000 * 100000000
@@ -19,6 +18,16 @@ SIGTYPE_SW_V1 = 3
 # https://github.com/bitcoin/bips/blob/master/bip-0341/wallet-test-vectors.json
 with open(root_dir + 'src/data/bip341_vectors.json', 'r') as f:
     JSON = json.load(f)
+
+
+def tx_witness_stack_create(items):
+    """Create a witness stack from a list of hex witness items"""
+    wit_p = pointer(wally_tx_witness_stack())
+    assert wally_tx_witness_stack_init_alloc(len(items), wit_p) == WALLY_OK
+    for i in items:
+        item, item_len = make_cbuffer(i)
+        assert wally_tx_witness_stack_add(wit_p.contents, item, item_len) == WALLY_OK
+    return wit_p
 
 
 class TransactionTests(unittest.TestCase):
@@ -877,45 +886,29 @@ class TransactionTests(unittest.TestCase):
 
         txhash, txhash_len = make_cbuffer('00' * 32)
         script, script_len = make_cbuffer('51')
-        item, item_len = make_cbuffer('aa' * 4)
-        witnesses = []
-        for num_items in [1, 2]:
-            wit_p = pointer(wally_tx_witness_stack())
-            self.assertEqual(wally_tx_witness_stack_init_alloc(num_items, wit_p), WALLY_OK)
-            for _ in range(num_items):
-                ret = wally_tx_witness_stack_add(wit_p[0], item, item_len)
-                self.assertEqual(ret, WALLY_OK)
-            witnesses.append(wit_p)
-        witness, pegin_witness = witnesses[0][0], witnesses[1][0]
+        witness = tx_witness_stack_create(['aa' * 4])
+        pegin_witness = tx_witness_stack_create(['aa' * 4] * 2)
         src = pointer(wally_tx_input())
         ret = wally_tx_elements_input_init_alloc(txhash, txhash_len, 0, 0xffffffff,
                                                  script, script_len, witness,
                                                  None, 0, None, 0, None, 0, None, 0,
                                                  None, 0, None, 0, pegin_witness, src)
         self.assertEqual(ret, WALLY_OK)
+        wally_tx_witness_stack_free(witness)
+        wally_tx_witness_stack_free(pegin_witness)
 
-        fail_at = 0
-        while True:
-            # Fail each allocation made while cloning in turn
-            fail_at += 1
+        def check_clone():
             clone = pointer(wally_tx_input())
-            util._fail_malloc_at, util._fail_malloc_counter = fail_at, 0
-            try:
-                ret = wally_tx_input_clone_alloc(src, clone)
-                did_fail = util._fail_malloc_counter >= fail_at
-            finally:
-                util._fail_malloc_at, util._fail_malloc_counter = 0, 0
-            if not did_fail:
-                self.assertEqual(ret, WALLY_OK) # Cloned without failing
-                self.assertEqual(clone[0].witness[0].num_items, 1)
-                self.assertEqual(clone[0].pegin_witness[0].num_items, 2)
-                self.assertEqual(wally_tx_input_free(clone), WALLY_OK)
-                break
-            self.assertEqual(ret, WALLY_ENOMEM)
+            ret = wally_tx_input_clone_alloc(src, clone)
+            if ret != WALLY_ENOMEM:
+                self.assertEqual(clone.contents.witness.contents.num_items, 1)
+                self.assertEqual(clone.contents.pegin_witness.contents.num_items, 2)
+                wally_tx_input_free(clone)
+            return ret
 
-        self.assertEqual(wally_tx_input_free(src), WALLY_OK)
-        for wit_p in witnesses:
-            self.assertEqual(wally_tx_witness_stack_free(wit_p[0]), WALLY_OK)
+        self.assertEqual(malloc_fail_loop(check_clone), WALLY_OK)
+        wally_tx_input_free(src)
+
 
 if __name__ == '__main__':
     unittest.main()

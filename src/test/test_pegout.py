@@ -20,8 +20,9 @@ class PegoutTests(unittest.TestCase):
         c_path = self.path_to_c(path)
         key_out = POINTER(ext_key)()
         fn = bip32_key_with_tweak_from_parent_path_alloc
+        # Note: passing FLAG_KEY_TWEAK_SUM in flags is optional
         self.assertEqual(fn(byref(parent), c_path, len(path),
-                            FLAG_KEY_PUBLIC | FLAG_KEY_TWEAK_SUM, byref(key_out)), WALLY_OK)
+                            FLAG_KEY_PUBLIC, byref(key_out)), WALLY_OK)
         return key_out[0].pub_key, key_out[0].pub_key_tweak_sum
 
     def generate_pegout_whitelistproof(self):

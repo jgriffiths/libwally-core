@@ -913,6 +913,7 @@ int wally_asset_blinding_key_to_ec_public_key(
 }
 
 #ifdef BUILD_ELEMENTS
+WARN_UNUSED_RESULT
 static int elip150_tagged_hash(const unsigned char *pubkey, size_t pubkey_len,
                                const unsigned char *script, size_t script_len,
                                struct sha256 *sha_out)

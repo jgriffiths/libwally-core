@@ -183,7 +183,7 @@ int bip39_mnemonic_to_bytes(const struct words *w, const char *mnemonic,
 
     ret = mnemonic_to_bytes(w, mnemonic, tmp_bytes, sizeof(tmp_bytes), &tmp_len);
 
-    if (!ret) {
+    if (ret == WALLY_OK) {
         /* Remove checksum bytes from the output length */
         --tmp_len;
         if (tmp_len > BIP39_ENTROPY_LEN_256)
@@ -197,7 +197,7 @@ int bip39_mnemonic_to_bytes(const struct words *w, const char *mnemonic,
                     ret = WALLY_EINVAL;
                 else
                     ret = verify_checksum(tmp_bytes, tmp_len, mask);
-                if (ret)
+                if (ret != WALLY_OK)
                     tmp_len = 0;
                 else
                     wally_memcpy(bytes_out, tmp_bytes, tmp_len);
@@ -206,7 +206,7 @@ int bip39_mnemonic_to_bytes(const struct words *w, const char *mnemonic,
     }
 
     wally_clear(tmp_bytes, sizeof(tmp_bytes));
-    if (!ret && written)
+    if (ret == WALLY_OK && written)
         *written = tmp_len;
     return ret;
 }
@@ -250,7 +250,7 @@ int bip39_mnemonic_to_seed(const char *mnemonic, const char *passphrase,
                                    salt, salt_len, 0,
                                    bip9_cost, bytes_out, len);
 
-    if (!ret && written)
+    if (ret == WALLY_OK && written)
         *written = BIP39_SEED_LEN_512; /* Succeeded */
 
     clear_and_free(salt, salt_len);

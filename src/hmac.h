@@ -14,9 +14,6 @@ struct sha512;
  * @key_len: The length of @key in bytes.
  * @msg: The message to hash
  * @msg_len: The length of @msg in bytes.
- *
- * Returns WALLY_OK, or WALLY_ERROR if hashing failed, in which case
- * @sha is cleared.
  */
 int hmac_sha256_impl(struct sha256 *sha,
                      const unsigned char *key, size_t key_len,
@@ -30,9 +27,6 @@ int hmac_sha256_impl(struct sha256 *sha,
  * @key_len: The length of @key in bytes.
  * @msg: The message to hash
  * @msg_len: The length of @msg in bytes.
- *
- * Returns WALLY_OK, or WALLY_ERROR if hashing failed, in which case
- * @sha is cleared.
  */
 int hmac_sha512_impl(struct sha512 *sha,
                      const unsigned char *key, size_t key_len,

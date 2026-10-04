@@ -314,7 +314,7 @@ static int key_compute_pub_key(struct ext_key *key_out)
                                                 sizeof(key_out->pub_key));
 }
 
-static int key_compute_hash160(struct ext_key *key_out)
+WARN_UNUSED_RESULT static int key_compute_hash160(struct ext_key *key_out)
 {
     return wally_hash160(key_out->pub_key, sizeof(key_out->pub_key),
                          key_out->hash160, sizeof(key_out->hash160));

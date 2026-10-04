@@ -167,14 +167,14 @@ int bip38_raw_from_private_key(const unsigned char *bytes, size_t bytes_len,
                                   &buf.u.normal.hash);
         wally_free_string(addr58);
     }
-    if (ret)
-        goto finish;
 
-    ret = wally_scrypt(pass, pass_len,
-                       (unsigned char *)&buf.u.normal.hash, sizeof(buf.u.normal.hash),
-                       16384, 8, 8,
-                       (unsigned char *)&derived, sizeof(derived));
-    if (ret)
+    if (ret == WALLY_OK)
+        ret = wally_scrypt(pass, pass_len,
+                           (unsigned char *)&buf.u.normal.hash,
+                           sizeof(buf.u.normal.hash),
+                           16384, 8, 8,
+                           (unsigned char *)&derived, sizeof(derived));
+    if (ret != WALLY_OK)
         goto finish;
 
     buf.prefix = BIP38_PREFIX;
@@ -214,7 +214,7 @@ int bip38_from_private_key(const unsigned char *bytes, size_t bytes_len,
 
     ret = bip38_raw_from_private_key(bytes, bytes_len, pass, pass_len,
                                      flags, &buf.prefix, BIP38_SERIALIZED_LEN);
-    if (!ret)
+    if (ret == WALLY_OK)
         ret = wally_base58_from_bytes(&buf.prefix, BIP38_SERIALIZED_LEN,
                                       BASE58_FLAG_CHECKSUM, output);
 
@@ -311,12 +311,12 @@ static int to_private_key(const char *bip38,
         char *addr58 = NULL;
         ret = address_from_private_key(bytes_out, len, network,
                                        buf.flags & BIP38_FLAG_COMPRESSED, &addr58);
-        if (!ret)
+        if (ret == WALLY_OK)
             ret = base58_get_checksum((unsigned char *)addr58, strlen(addr58),
                                       &checksum);
         wally_free_string(addr58);
     }
-    if (!ret && buf.u.normal.hash != checksum)
+    if (ret == WALLY_OK && buf.u.normal.hash != checksum)
         ret = WALLY_EINVAL;
     if (ret != WALLY_OK)
         wally_clear(bytes_out, len); /* Don't return an unverified key */

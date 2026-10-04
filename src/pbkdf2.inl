@@ -17,7 +17,7 @@ int SHA_POST(wally_pbkdf2_hmac_)(const unsigned char *pass, size_t pass_len,
                                  uint32_t flags, uint32_t cost,
                                  unsigned char *bytes_out, size_t len)
 {
-    unsigned char *tmp_salt = NULL, *bytes_start = bytes_out;
+    unsigned char *tmp_salt = NULL, *out = bytes_out;
     struct SHA_T d1, d2, *sha_cp;
     size_t n, c, j;
     int ret = WALLY_OK;
@@ -36,8 +36,8 @@ int SHA_POST(wally_pbkdf2_hmac_)(const unsigned char *pass, size_t pass_len,
     salt_len += PBKDF2_HMAC_EXTRA_LEN;
 
     /* If bytes out is suitably aligned, we can work on it directly */
-    if (alignment_ok(bytes_out, sizeof(SHA_ALIGN_T)))
-        sha_cp = (void *)bytes_out;
+    if (alignment_ok(out, sizeof(SHA_ALIGN_T)))
+        sha_cp = (void *)out;
     else
         sha_cp = &d2;
 
@@ -58,16 +58,16 @@ int SHA_POST(wally_pbkdf2_hmac_)(const unsigned char *pass, size_t pass_len,
                 sha_cp->u.SHA_MEM[j] ^= d1.u.SHA_MEM[j];
         }
         if (sha_cp == &d2)
-            memcpy(bytes_out, sha_cp, sizeof(*sha_cp));
+            memcpy(out, sha_cp, sizeof(*sha_cp));
         else
             ++sha_cp;
 
-        bytes_out += PBKDF2_HMAC_SHA_LEN;
+        out += PBKDF2_HMAC_SHA_LEN;
     }
 
 cleanup:
     if (ret != WALLY_OK)
-        wally_clear(bytes_start, len);
+        wally_clear(bytes_out, len);
     wally_clear_2(&d1, sizeof(d1), &d2, sizeof(d2));
     if (tmp_salt) {
         wally_clear(tmp_salt, salt_len);

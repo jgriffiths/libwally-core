@@ -43,9 +43,9 @@ static const uint8_t PSET_MAGIC[5] = {'p', 's', 'e', 't', 0xff};
  * indices can never be valid on BTC either */
 #define MASK_INDEX(index) ((index) & WALLY_TX_INDEX_MASK)
 
-/* BIP-371 does not limit the number of tapleaf hashes per key. Bound their
- * length by the largest field Bitcoin Core will deserialize (MAX_SIZE) */
-#define PSBT_TAPLEAF_HASHES_MAX_LEN 0x02000000u
+/* BIP-371 does not limit the number of tapleaf hashes per key. Limit
+ * to 16K until a need is demonstrated for a larger limit */
+#define PSBT_TAPLEAF_HASHES_MAX_LEN 0x4000
 
 #ifdef BUILD_ELEMENTS
 /* The PSET key prefix is the same as the first 4 PSET magic bytes */

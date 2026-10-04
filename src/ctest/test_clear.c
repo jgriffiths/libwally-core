@@ -18,8 +18,7 @@
 #include <string.h>
 #include <stdbool.h>
 
-/* Compile the tests without optimization, which passing -O0 cannot ensure:
- * CFLAGS (e.g. the default '-g -O2') follows it on the command line */
+/* Prevent the optimizer eliding/rearranging things */
 #if defined(__clang__)
 #pragma clang optimize off
 #elif defined(__GNUC__)

@@ -330,12 +330,12 @@ bool sha512_done(struct sha512_ctx *ctx, struct sha512 *res)
 #ifdef CCAN_CRYPTO_SHA512_USE_PSA
 bool sha512(struct sha512 *sha, const void *p, size_t size)
 {
-	/* psa_hash_compute() may reject a NULL input, even for zero bytes */
-	static const unsigned char dummy = 0;
 	size_t len = 0;
+	if (!size)
+		return true; /* No-op */
 
-	if (psa_hash_compute(PSA_ALG_SHA_512, size ? p : (const void *)&dummy, size,
-			     sha->u.u8, sizeof(sha->u.u8), &len) != PSA_SUCCESS ||
+	if (psa_hash_compute(PSA_ALG_SHA_512, p, size, sha->u.u8, sizeof(sha->u.u8),
+	                     &len) != PSA_SUCCESS ||
 	    len != sizeof(sha->u.u8)) {
 		memset(sha, 0, sizeof(*sha));
 		return false;
